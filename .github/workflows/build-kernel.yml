@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: ['x64', 'arm64']
+        arch: ['x86_64', 'arm64']
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repository
@@ -43,16 +43,14 @@ jobs:
           sudo ln -s --force $HOME/toolchain/bin/llvm-readelf /usr/bin/llvm-readelf
           sudo ln -s --force $HOME/toolchain/bin/clang++ /usr/bin/clang++
 
-      - name: Setup Kernel
-        run: |
-          cp configs/wsa/config-wsa-${{ matrix.arch }} .config
-          make olddefconfig
-
       - name: Build Kernel
         run: |
-          declare -A FILE_NAME=(["x64"]="bzImage" ["arm64"]="Image")
-          make -j`nproc` LLVM=1 ARCH=${{ matrix.arch }} $(if [ "${{ matrix.arch }}" == "arm64" ]; then echo CROSS_COMPILE=aarch64-linux-gnu; else echo CROSS_COMPILE=x86_64-linux-gnu; fi) ${FILE_NAME[${{ matrix.arch }}]}
-          declare -A ARCH_MAP_FILE=(["x64"]="x86" ["arm64"]="arm64")
+          declare -A ARCH_MAP=(["x86_64"]="x64" ["arm64"]="arm64")
+          cp configs/wsa/config-wsa-${ARCH_MAP[${{ matrix.arch }}]} .config
+          make olddefconfig
+          declare -A FILE_NAME=(["x86_64"]="bzImage" ["arm64"]="Image")
+          make -j`nproc` LLVM=1 ARCH=${{ matrix.arch }} $(if [ "${{ matrix.arch }}" == "arm64" ]; then echo CROSS_COMPILE=aarch64-linux-gnu; fi) ${FILE_NAME[${{ matrix.arch }}]} CCACHE="/usr/bin/ccache"
+          declare -A ARCH_MAP_FILE=(["x86_64"]="x86" ["arm64"]="arm64")
           echo "file_path=arch/${ARCH_MAP_FILE[${{ matrix.arch }}]}/boot/${FILE_NAME[${{ matrix.arch }}]}" >> $GITHUB_ENV
 
       - name: Upload Kernel
