@@ -51,9 +51,9 @@ jobs:
       - name: Build Kernel
         run: |
           declare -A FILE_NAME=(["x64"]="bzImage" ["arm64"]="Image")
-          make -j`nproc` LLVM=1 ARCH=${{ matrix.arch }} $(if [ "${{ matrix.arch }}" == "arm64" ]; then echo CROSS_COMPILE=aarch64-linux-gnu; fi) ${FILE_NAME[${{ matrix.arch }}]}
+          make -j`nproc` LLVM=1 ARCH=${{ matrix.arch }} $(if [ "${{ matrix.arch }}" == "arm64" ]; then echo CROSS_COMPILE=aarch64-linux-gnu; else echo CROSS_COMPILE=x86_64-linux-gnu; fi) ${FILE_NAME[${{ matrix.arch }}]}
           declare -A ARCH_MAP_FILE=(["x64"]="x86" ["arm64"]="arm64")
-          echo "file_path=WSA-Linux-Kernel/arch/${ARCH_MAP_FILE[${{ matrix.arch }}]}/boot/${FILE_NAME[${{ matrix.arch }}]}" >> $GITHUB_ENV
+          echo "file_path=arch/${ARCH_MAP_FILE[${{ matrix.arch }}]}/boot/${FILE_NAME[${{ matrix.arch }}]}" >> $GITHUB_ENV
 
       - name: Upload Kernel
         uses: actions/upload-artifact@v4
