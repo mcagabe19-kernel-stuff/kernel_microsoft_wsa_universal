@@ -1,0 +1,62 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ['x64', 'arm6']
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 1
+          submodules: true
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install bc bison build-essential flex libelf-dev binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu gzip libarchive-tools
+
+      - name: Setup Clang Toolchain
+        run: |
+          cd ~/
+          mkdir toolchain
+          cd toolchain
+          bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S=10032024
+          bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") --patch=glibc
+
+      - name: Setup Kernel
+        run: |
+          sudo ln -s --force ~/toolchain/bin/clang /usr/bin/clang
+          sudo ln -s --force ~/toolchain/bin/ld.lld /usr/bin/ld.lld
+          sudo ln -s --force ~/toolchain/bin/llvm-objdump /usr/bin/llvm-objdump
+          sudo ln -s --force ~/toolchain/bin/llvm-ar /usr/bin/llvm-ar
+          sudo ln -s --force ~/toolchain/bin/llvm-nm /usr/bin/llvm-nm
+          sudo ln -s --force ~/toolchain/bin/llvm-strip /usr/bin/llvm-strip
+          sudo ln -s --force ~/toolchain/bin/llvm-objcopy /usr/bin/llvm-objcopy
+          sudo ln -s --force ~/toolchain/bin/llvm-readelf /usr/bin/llvm-readelf
+          sudo ln -s --force ~/toolchain/bin/clang++ /usr/bin/clang++
+          cp configs/wsa/config-wsa-${{ matrix.arch }} .config
+          make olddefconfig
+
+      - name: Build Kernel
+        run: |
+          declare -A FILE_NAME=(["x64"]="bzImage" ["arm64"]="Image")
+          make -j`nproc` LLVM=1 ARCH=${{ matrix.arch }} $(if [ "${{ matrix.arch }}" == "arm64" ]; then echo CROSS_COMPILE=aarch64-linux-gnu; fi) ${FILE_NAME[${{ matrix.arch }}]}
+          declare -A ARCH_MAP_FILE=(["x64"]="x86" ["arm64"]="arm64")
+          echo "file_path=WSA-Linux-Kernel/arch/${ARCH_MAP_FILE[${{ matrix.arch }}]}/boot/${FILE_NAME[${{ matrix.arch }}]}" >> $GITHUB_ENV
+
+      - name: Upload Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: WSA-Kernel-${{ matrix.arch }}
+          path: "${{ env.file_path }}"
