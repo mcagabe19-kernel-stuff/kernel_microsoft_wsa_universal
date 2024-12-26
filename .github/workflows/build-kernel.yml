@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: ['x64', 'arm6']
+        arch: ['x64', 'arm64']
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repository
