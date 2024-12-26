@@ -24,28 +24,11 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install bc bison build-essential flex libelf-dev binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu gzip libarchive-tools
-
-      - name: Setup Clang Toolchain
-        run: |
-          cd ~/
-          mkdir toolchain
-          cd toolchain
-          bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S=10032024
-          bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") --patch=glibc
+          sudo apt install -y --no-install-recommends bc bison build-essential ca-certificates flex git gnupg libelf-dev libssl-dev lsb-release software-properties-common wget libncurses-dev clang binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu nuget
 
       - name: Setup Kernel
         run: |
-          sudo ln -s --force ~/toolchain/bin/clang /usr/bin/clang
-          sudo ln -s --force ~/toolchain/bin/ld.lld /usr/bin/ld.lld
-          sudo ln -s --force ~/toolchain/bin/llvm-objdump /usr/bin/llvm-objdump
-          sudo ln -s --force ~/toolchain/bin/llvm-ar /usr/bin/llvm-ar
-          sudo ln -s --force ~/toolchain/bin/llvm-nm /usr/bin/llvm-nm
-          sudo ln -s --force ~/toolchain/bin/llvm-strip /usr/bin/llvm-strip
-          sudo ln -s --force ~/toolchain/bin/llvm-objcopy /usr/bin/llvm-objcopy
-          sudo ln -s --force ~/toolchain/bin/llvm-readelf /usr/bin/llvm-readelf
-          sudo ln -s --force ~/toolchain/bin/clang++ /usr/bin/clang++
-          cp configs/wsa/config-wsa-${{ matrix.arch }} .config
+          cp configs/wsa/config-wsa-${{ matrix.arch }} .config
           make olddefconfig
 
       - name: Build Kernel
